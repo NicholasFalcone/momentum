@@ -50,8 +50,10 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
                                 value={settings.accentColor || '#00A3FF'}
                                 onChange={(e) => {
                                     const color = e.target.value;
-                                    setSettings({ ...settings, accentColor: color });
+                                    const newSettings = { ...settings, accentColor: color };
+                                    setSettings(newSettings);
                                     document.documentElement.style.setProperty('--accent', color);
+                                    window.electron.saveSettings(newSettings);
                                 }}
                                 style={{
                                     padding: '0',

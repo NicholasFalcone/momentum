@@ -17,6 +17,7 @@ function createWindow() {
         transparent: true,
         alwaysOnTop: true,
         skipTaskbar: true,
+        icon: path.join(__dirname, 'assets/icon.png'),
         webPreferences: {
             nodeIntegration: false,
             contextIsolation: true,
@@ -49,9 +50,7 @@ function createWindow() {
 }
 
 function createTray() {
-    // Create a simple red dot as a placeholder icon if no file exists
-    // In a real app, you'd use path.join(__dirname, 'assets/icon.png')
-    const icon = nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5gMREBEy5m8xGAAAADJJREFUOMtjYKAiYGFgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYGBgYIADAFv8AbXmH5dDAAAAAElFTkSuQmCC');
+    const icon = nativeImage.createFromPath(path.join(__dirname, 'assets/icon.png'));
     tray = new Tray(icon);
 
     const contextMenu = Menu.buildFromTemplate([
@@ -147,7 +146,7 @@ ipcMain.handle('search', async (event, query) => {
                 if (result.path && typeof result.path === 'string' && result.path.toLowerCase().endsWith('.lnk')) {
                     try {
                         const shortcut = shell.readShortcutLink(result.path);
-                        if (shortcut && shortcut.target) {
+                        if (shortcut && shortcut.target && typeof shortcut.target === 'string' && shortcut.target.length > 0) {
                             iconPath = shortcut.target;
                         }
                     } catch (e) {
@@ -155,7 +154,7 @@ ipcMain.handle('search', async (event, query) => {
                     }
                 }
                 const icon = await app.getFileIcon(iconPath, { size: 'normal' });
-                return { ...result, icon: icon.toDataURL() };
+                return { ...result, icon: (icon && typeof icon.toDataURL === 'function') ? icon.toDataURL() : null };
             } catch (err) {
                 console.error(`Failed to get icon for ${result.path}:`, err);
             }
