@@ -56,7 +56,7 @@ function createTray() {
 
     const contextMenu = Menu.buildFromTemplate([
         {
-            label: 'Show Thyme',
+            label: 'Show Momentum',
             click: () => {
                 mainWindow.center();
                 mainWindow.show();
@@ -82,7 +82,7 @@ function createTray() {
         }
     ]);
 
-    tray.setToolTip('Thyme Launcher');
+    tray.setToolTip('Momentum');
     tray.setContextMenu(contextMenu);
 
     tray.on('click', () => {
@@ -137,7 +137,33 @@ app.on('before-quit', () => {
 });
 
 ipcMain.handle('search', async (event, query) => {
-    return searchEngine.search(query);
+    const results = await searchEngine.search(query);
+
+    // Enrich app results with icons
+    const enrichedResults = await Promise.all(results.map(async (result) => {
+        if (result.type === 'app' && result.path) {
+            try {
+                let iconPath = result.path;
+                if (result.path && typeof result.path === 'string' && result.path.toLowerCase().endsWith('.lnk')) {
+                    try {
+                        const shortcut = shell.readShortcutLink(result.path);
+                        if (shortcut && shortcut.target) {
+                            iconPath = shortcut.target;
+                        }
+                    } catch (e) {
+                        console.error(`Failed to read shortcut ${result.path}:`, e);
+                    }
+                }
+                const icon = await app.getFileIcon(iconPath, { size: 'normal' });
+                return { ...result, icon: icon.toDataURL() };
+            } catch (err) {
+                console.error(`Failed to get icon for ${result.path}:`, err);
+            }
+        }
+        return result;
+    }));
+
+    return enrichedResults;
 });
 
 ipcMain.handle('launch', async (event, filePath) => {
@@ -149,8 +175,13 @@ ipcMain.handle('open-url', async (event, url) => {
 });
 
 ipcMain.handle('execute-command', async (event, command) => {
-    exec(command, (error, stdout, stderr) => {
-        if (error) console.error(`exec error: ${error}`);
+    // For Windows, using shell: true helps with built-in commands and paths with spaces
+    exec(command, { shell: true }, (error, stdout, stderr) => {
+        if (error) {
+            console.error(`exec error: ${error}`);
+            return;
+        }
+        if (stderr) console.error(`exec stderr: ${stderr}`);
     });
 });
 

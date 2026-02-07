@@ -9,7 +9,12 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
     const [settings, setSettings] = useState<any>(null);
 
     useEffect(() => {
-        window.electron.getSettings().then(setSettings);
+        window.electron.getSettings().then((s: any) => {
+            setSettings(s);
+            if (s.accentColor) {
+                document.documentElement.style.setProperty('--accent', s.accentColor);
+            }
+        });
     }, []);
 
     const handleSave = async () => {
@@ -37,6 +42,32 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
                             onChange={(e) => setSettings({ ...settings, hotkey: e.target.value })}
                         />
                     </div>
+                    <div className="field" style={{ marginTop: '16px' }}>
+                        <label>Accent Color</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <input
+                                type="color"
+                                value={settings.accentColor || '#00A3FF'}
+                                onChange={(e) => {
+                                    const color = e.target.value;
+                                    setSettings({ ...settings, accentColor: color });
+                                    document.documentElement.style.setProperty('--accent', color);
+                                }}
+                                style={{
+                                    padding: '0',
+                                    border: 'none',
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '4px',
+                                    background: 'transparent',
+                                    cursor: 'pointer'
+                                }}
+                            />
+                            <span style={{ fontSize: '14px', fontFamily: 'monospace' }}>
+                                {settings.accentColor || '#00A3FF'}
+                            </span>
+                        </div>
+                    </div>
                 </section>
 
                 <section>
@@ -59,6 +90,40 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
                                 </div>
                             </div>
                         ))}
+                    </div>
+                </section>
+
+                <section>
+                    <h3>Shortcuts & Commands</h3>
+                    <div className="shortcuts-list" style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '12px',
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        padding: '16px',
+                        borderRadius: '12px',
+                        fontSize: '14px'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
+                            <span style={{ color: 'var(--text-dim)' }}>Global Search</span>
+                            <span style={{ fontWeight: 'bold', color: 'var(--accent)' }}>{settings.hotkey}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
+                            <span style={{ color: 'var(--text-dim)' }}>Clipboard History</span>
+                            <span style={{ fontWeight: 'bold', color: 'var(--accent)' }}>Ctrl+Alt+Space</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
+                            <span style={{ color: 'var(--text-dim)' }}>Execute Command</span>
+                            <span style={{ fontWeight: 'bold', color: 'var(--accent)' }}>$ [command]</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '8px' }}>
+                            <span style={{ color: 'var(--text-dim)' }}>Math Calculation</span>
+                            <span style={{ fontWeight: 'bold', color: 'var(--accent)' }}>[equation]</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                            <span style={{ color: 'var(--text-dim)' }}>Settings</span>
+                            <span style={{ fontWeight: 'bold', color: 'var(--accent)' }}>"settings" or ","</span>
+                        </div>
                     </div>
                 </section>
 

@@ -5,6 +5,7 @@ interface Result {
     path?: string;
     type: string;
     value?: any;
+    icon?: string;
 }
 
 interface ResultListProps {
@@ -16,12 +17,24 @@ interface ResultListProps {
 const ResultList: React.FC<ResultListProps> = ({ results, selectedIndex, onSelect }) => {
     if (results.length === 0) return null;
 
-    const getIcon = (type: string) => {
-        switch (type) {
+    const renderIcon = (result: Result) => {
+        if (result.type === 'app' && result.icon) {
+            return (
+                <img
+                    src={result.icon}
+                    alt=""
+                    style={{ width: '20px', height: '20px', objectFit: 'contain' }}
+                />
+            );
+        }
+
+        switch (result.type) {
             case 'app': return '🚀';
             case 'calc': return '🔢';
             case 'cmd': return '💻';
             case 'clipboard': return '📋';
+            case 'web': return result.icon || '🔍';
+            case 'ui': return '⚙️';
             default: return '📄';
         }
     };
@@ -35,7 +48,7 @@ const ResultList: React.FC<ResultListProps> = ({ results, selectedIndex, onSelec
                     onClick={() => onSelect(result)}
                 >
                     <span className="result-icon">
-                        {getIcon(result.type)}
+                        {renderIcon(result)}
                     </span>
                     <span className="result-name">{result.name}</span>
                     {result.type === 'app' && <span className="result-path">{result.path}</span>}

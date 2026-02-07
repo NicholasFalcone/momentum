@@ -140,6 +140,7 @@ body {
     margin: 0;
     font-size: 18px;
     font-weight: 600;
+    color: var(--accent);
 }
 
 .close-btn {
@@ -169,7 +170,8 @@ body {
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.1em;
-    color: var(--text-dim);
+    color: var(--accent);
+    opacity: 0.8;
     margin-bottom: 16px;
 }
 
@@ -190,6 +192,13 @@ body {
     padding: 10px 12px;
     color: var(--text);
     font-size: 14px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.field input:focus {
+    border-color: var(--accent);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0, 163, 255, 0.1);
 }
 
 .web-searches-list {

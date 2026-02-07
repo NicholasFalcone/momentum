@@ -13,7 +13,8 @@ class SettingsManager {
                 { name: 'GitHub', keyword: 'gh', url: 'https://github.com/search?q={query}', icon: '🐙' },
                 { name: 'Wikipedia', keyword: 'w', url: 'https://en.wikipedia.org/wiki/Special:Search?search={query}', icon: '📖' }
             ],
-            theme: 'dark'
+            theme: 'dark',
+            accentColor: '#00A3FF'
         };
         this.settings = this.load();
     }

@@ -36,16 +36,35 @@ function App() {
         return () => clearTimeout(timer);
     }, [query, fetchResults, view]);
 
+    const applyTheme = useCallback(async () => {
+        const settings = await window.electron.getSettings();
+        if (settings.accentColor) {
+            document.documentElement.style.setProperty('--accent', settings.accentColor);
+        }
+    }, []);
+
     useEffect(() => {
+        applyTheme();
+
         window.electron.onSetQuery((newQuery) => {
             setQuery(newQuery);
             setView('search');
         });
         window.electron.onSetView((newView) => {
             setView(newView);
-            if (newView === 'search') setQuery('');
+            if (newView === 'search') {
+                setQuery('');
+                applyTheme();
+            }
         });
-    }, []);
+    }, [applyTheme]);
+
+    // Apply theme when view changes from settings to search locally
+    useEffect(() => {
+        if (view === 'search') {
+            applyTheme();
+        }
+    }, [view, applyTheme]);
 
     const handleSelect = useCallback((result: Result) => {
         if (result.type === 'app' && result.path) {
