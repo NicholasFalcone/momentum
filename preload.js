@@ -6,6 +6,8 @@ contextBridge.exposeInMainWorld('electron', {
     openUrl: (url) => ipcRenderer.invoke('open-url', url),
     executeCommand: (command) => ipcRenderer.invoke('execute-command', command),
     copyToClipboard: (text) => ipcRenderer.invoke('copy-to-clipboard', text),
+    hideWindow: () => ipcRenderer.invoke('hide-window'),
+    setWindowView: (view) => ipcRenderer.invoke('set-window-view', view),
     getSettings: () => ipcRenderer.invoke('get-settings'),
     saveSettings: (settings) => ipcRenderer.invoke('save-settings', settings),
     onSetQuery: (callback) => ipcRenderer.on('set-query', (event, query) => callback(query)),

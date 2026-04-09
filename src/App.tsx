@@ -19,6 +19,14 @@ function App() {
     const [results, setResults] = useState<Result[]>([]);
     const [selectedIndex, setSelectedIndex] = useState(0);
 
+    const hideLauncher = useCallback(() => {
+        setView('search');
+        setQuery('');
+        setResults([]);
+        setSelectedIndex(0);
+        window.electron.hideWindow();
+    }, []);
+
     const fetchResults = useCallback(async (q: string) => {
         if (q.trim()) {
             const data = await window.electron.search(q);
@@ -41,6 +49,11 @@ function App() {
         if (settings.accentColor) {
             document.documentElement.style.setProperty('--accent', settings.accentColor);
         }
+
+        document.documentElement.style.setProperty(
+            '--overlay-opacity',
+            String(settings.overlayOpacity ?? 0.7)
+        );
     }, []);
 
     useEffect(() => {
@@ -59,8 +72,22 @@ function App() {
         });
     }, [applyTheme]);
 
+    useEffect(() => {
+        const handleEscape = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                event.preventDefault();
+                hideLauncher();
+            }
+        };
+
+        window.addEventListener('keydown', handleEscape);
+        return () => window.removeEventListener('keydown', handleEscape);
+    }, [hideLauncher]);
+
     // Apply theme when view changes from settings to search locally
     useEffect(() => {
+        window.electron.setWindowView(view);
+
         if (view === 'search') {
             applyTheme();
         }
@@ -86,6 +113,12 @@ function App() {
     }, []);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            hideLauncher();
+            return;
+        }
+
         if (results.length === 0) return;
 
         if (e.key === 'ArrowDown') {
@@ -106,7 +139,7 @@ function App() {
     };
 
     return (
-        <div className="app-container">
+        <div className={`app-container ${view === 'settings' ? 'settings-mode' : 'search-mode'}`}>
             <AnimatePresence mode="wait">
                 {view === 'search' ? (
                     <motion.div

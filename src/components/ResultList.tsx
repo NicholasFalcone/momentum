@@ -23,7 +23,7 @@ const ResultList: React.FC<ResultListProps> = ({ results, selectedIndex, onSelec
                 <img
                     src={result.icon}
                     alt=""
-                    style={{ width: '20px', height: '20px', objectFit: 'contain' }}
+                    style={{ width: '24px', height: '24px', objectFit: 'contain' }}
                 />
             );
         }

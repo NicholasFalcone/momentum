@@ -7,6 +7,8 @@ class SettingsManager {
         this.settingsPath = path.join(app.getPath('userData'), 'settings.json');
         this.defaults = {
             hotkey: 'Alt+Space',
+            launchAtStartup: false,
+            overlayOpacity: 0.7,
             webSearches: [
                 { name: 'Google', keyword: 'g', url: 'https://www.google.com/search?q={query}', icon: '🔍' },
                 { name: 'YouTube', keyword: 'yt', url: 'https://www.youtube.com/results?search_query={query}', icon: '📺' },
@@ -19,21 +21,31 @@ class SettingsManager {
         this.settings = this.load();
     }
 
+    normalizeSettings(settings) {
+        const overlayOpacity = Number(settings.overlayOpacity);
+        return {
+            ...settings,
+            overlayOpacity: Number.isFinite(overlayOpacity)
+                ? Math.min(1, Math.max(0.35, overlayOpacity))
+                : this.defaults.overlayOpacity,
+        };
+    }
+
     load() {
         try {
             if (fs.existsSync(this.settingsPath)) {
                 const data = fs.readFileSync(this.settingsPath, 'utf8');
-                return { ...this.defaults, ...JSON.parse(data) };
+                return this.normalizeSettings({ ...this.defaults, ...JSON.parse(data) });
             }
         } catch (e) {
             console.error('Error loading settings:', e);
         }
-        return { ...this.defaults };
+        return this.normalizeSettings({ ...this.defaults });
     }
 
     save(newSettings) {
         try {
-            this.settings = { ...this.settings, ...newSettings };
+            this.settings = this.normalizeSettings({ ...this.settings, ...newSettings });
             fs.writeFileSync(this.settingsPath, JSON.stringify(this.settings, null, 2));
             return true;
         } catch (e) {

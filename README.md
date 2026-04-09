@@ -1,4 +1,4 @@
-# Momentum Launcher
+# One Moment
 
 A sleek and modern application launcher.
 
@@ -22,6 +22,14 @@ npm run dist
 ```
 
 The output will be located in the `release/` directory.
+
+## Launch at Startup
+
+The installed Windows build can be configured to start automatically when you sign in.
+
+Open the app settings and enable `Launch at Windows startup`.
+
+This option is only available in the packaged app. It will not register correctly while running through `npm start`.
 
 ### Build Troubleshooting
 

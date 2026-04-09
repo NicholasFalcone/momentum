@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
+const { execFileSync } = require('child_process');
+const { shell } = require('electron');
 const clipboardService = require('./clipboard_service');
 const settingsManager = require('./settings_manager');
 
@@ -14,42 +15,175 @@ class SearchEngine {
         if (this.indexing) return;
         this.indexing = true;
 
-        const searchPaths = [
-            path.join(process.env.ProgramData || '', 'Microsoft/Windows/Start Menu/Programs'),
-            path.join(process.env.AppData || '', 'Microsoft/Windows/Start Menu/Programs'),
-        ];
+        try {
+            const apps = [];
+            const seenKeys = new Set();
 
-        const apps = [];
-        for (const startMenuPath of searchPaths) {
-            if (fs.existsSync(startMenuPath)) {
-                this.scanDir(startMenuPath, apps);
+            for (const source of this.getShortcutSources()) {
+                if (fs.existsSync(source.path)) {
+                    this.scanDir(source.path, apps, seenKeys, source.kind);
+                }
             }
-        }
 
-        this.apps = apps;
-        this.indexing = false;
-        return this.apps;
+            for (const app of this.collectRegistryApps()) {
+                this.addApp(apps, seenKeys, app);
+            }
+
+            this.apps = apps.sort((left, right) => left.name.localeCompare(right.name));
+            return this.apps;
+        } finally {
+            this.indexing = false;
+        }
     }
 
-    scanDir(dir, results) {
+    getShortcutSources() {
+        return [
+            {
+                path: path.join(process.env.ProgramData || '', 'Microsoft/Windows/Start Menu/Programs'),
+                kind: 'start-menu',
+            },
+            {
+                path: path.join(process.env.AppData || '', 'Microsoft/Windows/Start Menu/Programs'),
+                kind: 'start-menu',
+            },
+            {
+                path: path.join(process.env.PUBLIC || '', 'Desktop'),
+                kind: 'desktop',
+            },
+            {
+                path: path.join(process.env.USERPROFILE || '', 'Desktop'),
+                kind: 'desktop',
+            },
+        ].filter(source => source.path);
+    }
+
+    scanDir(dir, results, seenKeys, sourceKind) {
         try {
             const files = fs.readdirSync(dir);
             for (const file of files) {
                 const fullPath = path.join(dir, file);
                 const stats = fs.statSync(fullPath);
                 if (stats.isDirectory()) {
-                    this.scanDir(fullPath, results);
+                    this.scanDir(fullPath, results, seenKeys, sourceKind);
                 } else if (file.endsWith('.lnk')) {
-                    results.push({
-                        name: path.basename(file, '.lnk'),
-                        path: fullPath,
-                        type: 'app'
-                    });
+                    this.addApp(results, seenKeys, this.createShortcutApp(fullPath, sourceKind));
                 }
             }
         } catch (e) {
             console.error(`Error scanning ${dir}:`, e);
         }
+    }
+
+    createShortcutApp(shortcutPath, sourceKind) {
+        const shortcutName = this.normalizeName(path.basename(shortcutPath, '.lnk'));
+        let targetPath = shortcutPath;
+
+        try {
+            const shortcut = shell.readShortcutLink(shortcutPath);
+            if (shortcut && shortcut.target) {
+                targetPath = shortcut.target;
+            }
+        } catch (error) {
+            // Some system shortcuts cannot be resolved reliably. Keep the shortcut path as fallback.
+        }
+
+        return {
+            name: shortcutName,
+            path: shortcutPath,
+            targetPath,
+            sourceKind,
+            type: 'app'
+        };
+    }
+
+    collectRegistryApps() {
+        try {
+            const command = [
+                "$paths = @('HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths', 'HKLM:\\Software\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\App Paths', 'HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\App Paths')",
+                "$apps = foreach ($registryPath in $paths) {",
+                "  if (Test-Path $registryPath) {",
+                "    Get-ChildItem $registryPath -ErrorAction SilentlyContinue | ForEach-Object {",
+                "      try {",
+                "        $item = Get-ItemProperty $_.PSPath",
+                "        $target = $item.'(default)'",
+                "        if ($target -and (Test-Path $target)) {",
+                "          [PSCustomObject]@{",
+                "            name = [System.IO.Path]::GetFileNameWithoutExtension($_.PSChildName)",
+                "            path = $target",
+                "            targetPath = $target",
+                "            sourceKind = 'app-path'",
+                "            type = 'app'",
+                "          }",
+                "        }",
+                "      } catch {}",
+                "    }",
+                "  }",
+                "}",
+                "$apps | ConvertTo-Json -Compress"
+            ].join('\n');
+
+            const output = execFileSync('powershell.exe', ['-NoProfile', '-Command', command], {
+                encoding: 'utf8',
+                windowsHide: true,
+            }).trim();
+
+            if (!output) {
+                return [];
+            }
+
+            const parsed = JSON.parse(output);
+            const entries = Array.isArray(parsed) ? parsed : [parsed];
+
+            return entries.map(entry => ({
+                ...entry,
+                name: this.normalizeName(entry.name),
+            }));
+        } catch (error) {
+            console.error('Failed to collect registry apps:', error);
+            return [];
+        }
+    }
+
+    addApp(results, seenKeys, app) {
+        if (!app || !app.name || !app.path) {
+            return;
+        }
+
+        const targetKey = this.normalizePath(app.targetPath || app.path);
+        const nameKey = this.normalizeName(app.name).toLowerCase();
+        const sourceKey = `${targetKey}::${nameKey}`;
+
+        if (seenKeys.has(sourceKey) || (targetKey && seenKeys.has(targetKey))) {
+            return;
+        }
+
+        if (targetKey) {
+            seenKeys.add(targetKey);
+        }
+        seenKeys.add(sourceKey);
+        results.push(app);
+    }
+
+    normalizeName(name) {
+        return String(name || '')
+            .replace(/[_-]+/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    normalizePath(filePath) {
+        return String(filePath || '').trim().toLowerCase();
+    }
+
+    scoreApp(app, lowerQuery) {
+        const appName = app.name.toLowerCase();
+        const words = appName.split(/\s+/);
+
+        if (appName === lowerQuery) return 400;
+        if (appName.startsWith(lowerQuery)) return 300;
+        if (words.some(word => word.startsWith(lowerQuery))) return 220;
+        if (appName.includes(lowerQuery)) return 120;
+        return 0;
     }
 
     search(query) {
@@ -118,7 +252,13 @@ class SearchEngine {
 
         // 6. App search
         const results = this.apps
-            .filter(app => app.name.toLowerCase().includes(lowerQuery))
+            .map(app => ({
+                app,
+                score: this.scoreApp(app, lowerQuery),
+            }))
+            .filter(item => item.score > 0)
+            .sort((left, right) => right.score - left.score || left.app.name.localeCompare(right.app.name))
+            .map(item => item.app)
             .slice(0, 5);
 
         return results;

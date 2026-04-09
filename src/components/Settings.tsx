@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Github } from 'lucide-react';
 
 interface SettingsProps {
     onClose: () => void;
@@ -8,12 +7,21 @@ interface SettingsProps {
 const Settings: React.FC<SettingsProps> = ({ onClose }) => {
     const [settings, setSettings] = useState<any>(null);
 
+    const applyAppearance = (nextSettings: any) => {
+        if (nextSettings.accentColor) {
+            document.documentElement.style.setProperty('--accent', nextSettings.accentColor);
+        }
+
+        document.documentElement.style.setProperty(
+            '--overlay-opacity',
+            String(nextSettings.overlayOpacity ?? 0.7)
+        );
+    };
+
     useEffect(() => {
         window.electron.getSettings().then((s: any) => {
             setSettings(s);
-            if (s.accentColor) {
-                document.documentElement.style.setProperty('--accent', s.accentColor);
-            }
+            applyAppearance(s);
         });
     }, []);
 
@@ -52,7 +60,7 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
                                     const color = e.target.value;
                                     const newSettings = { ...settings, accentColor: color };
                                     setSettings(newSettings);
-                                    document.documentElement.style.setProperty('--accent', color);
+                                    applyAppearance(newSettings);
                                     window.electron.saveSettings(newSettings);
                                 }}
                                 style={{
@@ -69,6 +77,56 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
                                 {settings.accentColor || '#00A3FF'}
                             </span>
                         </div>
+                    </div>
+                    <div className="field" style={{ marginTop: '16px' }}>
+                        <label>Overlay Opacity</label>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <input
+                                type="range"
+                                min="0.35"
+                                max="1"
+                                step="0.05"
+                                value={settings.overlayOpacity ?? 0.7}
+                                onChange={(e) => {
+                                    const overlayOpacity = Number(e.target.value);
+                                    const newSettings = { ...settings, overlayOpacity };
+                                    setSettings(newSettings);
+                                    applyAppearance(newSettings);
+                                }}
+                                style={{ flex: 1 }}
+                            />
+                            <span style={{ minWidth: '48px', textAlign: 'right', fontSize: '14px', fontFamily: 'monospace' }}>
+                                {Math.round((settings.overlayOpacity ?? 0.7) * 100)}%
+                            </span>
+                        </div>
+                        <span className="setting-toggle-note" style={{ marginTop: '6px' }}>
+                            Applica la trasparenza sia all’overlay di ricerca sia alla schermata Settings.
+                        </span>
+                    </div>
+                    <div className="field setting-toggle-card" style={{ marginTop: '16px' }}>
+                        <label className="setting-toggle-row">
+                            <span className="setting-toggle-text">
+                                <strong>Launch at Windows startup</strong>
+                                <small>
+                                    Avvia One Moment automaticamente quando accedi a Windows.
+                                </small>
+                            </span>
+                            <input
+                                className="setting-toggle-input"
+                                type="checkbox"
+                                checked={Boolean(settings.launchAtStartup)}
+                                disabled={!settings.startupSupported}
+                                onChange={(e) => setSettings({
+                                    ...settings,
+                                    launchAtStartup: e.target.checked,
+                                })}
+                            />
+                        </label>
+                        <span className="setting-toggle-note">
+                            {settings.startupSupported
+                                ? 'One Moment restera in background e sara disponibile dalla tray di Windows.'
+                                : 'Disponibile solo nella build installata, non mentre l’app gira con npm start.'}
+                        </span>
                     </div>
                 </section>
 
@@ -125,33 +183,6 @@ const Settings: React.FC<SettingsProps> = ({ onClose }) => {
                         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                             <span style={{ color: 'var(--text-dim)' }}>Settings</span>
                             <span style={{ fontWeight: 'bold', color: 'var(--accent)' }}>"settings" or ","</span>
-                        </div>
-                    </div>
-                </section>
-
-                <section>
-                    <h3>Project</h3>
-                    <div className="field">
-                        <label>Repository</label>
-                        <div
-                            className="repo-link"
-                            onClick={() => window.electron.openUrl('https://github.com/NicholasFalcone/momentum.git')}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                cursor: 'pointer',
-                                padding: '8px',
-                                borderRadius: '4px',
-                                background: 'rgba(255, 255, 255, 0.05)',
-                                color: '#fff',
-                                textDecoration: 'none',
-                                transition: 'background 0.2s',
-                                width: 'fit-content'
-                            }}
-                        >
-                            <Github size={16} />
-                            <span style={{ fontSize: '14px' }}>NicholasFalcone/momentum</span>
                         </div>
                     </div>
                 </section>

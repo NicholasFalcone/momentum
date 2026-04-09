@@ -1,5 +1,5 @@
 {
-    "name": "momentum",
+    "name": "one-moment",
     "version": "0.1.0",
     "repository": {
         "type": "git",
@@ -15,8 +15,8 @@
         "dist": "npm run build && electron-builder"
     },
     "build": {
-        "appId": "com.momentum.launcher",
-        "productName": "Momentum",
+        "appId": "com.onemoment.launcher",
+        "productName": "One Moment",
         "directories": {
             "output": "release"
         },
