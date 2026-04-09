@@ -1,0 +1,21 @@
+One Moment is licensed, not sold.
+
+By installing or using One Moment, you are granted a limited, non-exclusive, non-transferable, revocable license to use the software for personal or internal business use on Windows devices that you own or control.
+
+You may not:
+- copy, resell, rent, lease, sublicense, distribute, or commercially exploit the software except as permitted by applicable law;
+- reverse engineer, decompile, disassemble, or attempt to derive the source code of the software, except where such restriction is prohibited by law;
+- modify, adapt, or create derivative works based on the software, except where permitted by applicable law;
+- use the software in any unlawful manner or in any way that could harm the software, its users, or related services.
+
+The software is provided "as is" and "as available", without warranties of any kind, express or implied, including but not limited to warranties of merchantability, fitness for a particular purpose, and non-infringement, to the maximum extent permitted by applicable law.
+
+To the maximum extent permitted by applicable law, the author or publisher of One Moment shall not be liable for any indirect, incidental, special, consequential, exemplary, or punitive damages, or for any loss of data, profits, business, or goodwill arising out of or related to the use of or inability to use the software.
+
+You are responsible for complying with all applicable local, national, and international laws when using the software.
+
+The software may include or rely on third-party components that are licensed under their own terms. Those components remain subject to their respective licenses.
+
+The author or publisher may update, modify, suspend, or discontinue the software at any time without notice.
+
+By downloading, installing, or using One Moment, you agree to these license terms.
