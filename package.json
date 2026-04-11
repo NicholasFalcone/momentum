@@ -16,7 +16,8 @@
         "electron": "electron .",
         "start": "concurrently \"npm run dev\" \"npm run electron\"",
         "dist": "npm run build && electron-builder --win nsis --x64",
-        "dist:x64": "npm run build && electron-builder --win nsis --x64"
+        "dist:x64": "npm run build && electron-builder --win nsis --x64",
+        "sign:installer": "powershell -ExecutionPolicy Bypass -File .\\scripts\\sign-installer.ps1"
     },
     "build": {
         "appId": "com.onemoment.launcher",
